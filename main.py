@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 
+import numpy
+import matplotlib
+import matplotlib.pyplot as plt
 from sympy import latex, diff, sin, exp, Symbol
 from prettytable import PrettyTable
 
@@ -54,7 +57,21 @@ class SolutionMethod(ABC):
         pass
 
     def draw(self) -> None:
-        pass
+        plt.figure()
+        plt.xlabel(r'$x$', fontsize=14)
+        plt.ylabel(r'$F(x)$', fontsize=14)
+        plt.title(r"График функции $F(x)$")
+        x = Symbol('x')
+        x_values = numpy.arange(self._x_zero - self._h * 2, self._x_n + self._h * 2, 0.01)
+        y_values = [self._equation_solution.equation_func.subs(x, x_iter) for x_iter in x_values]
+        plt.plot(x_values, y_values, color='red')
+        x_values = []
+        y_values = []
+        for i in self._solution:
+            x_values.append(i[0])
+            y_values.append(i[1])
+        plt.plot(x_values, y_values, color='blue', marker='o')
+        plt.show()
 
 
 class EulerMethod(SolutionMethod):
@@ -73,6 +90,71 @@ class EulerMethod(SolutionMethod):
                  epsilon: float = 0.01) -> None:
         super().__init__(
             equation_diff, equation_solution, y_zero, x_zero, x_n, h, epsilon, 1,
+            ['i', 'xi', 'yi^h', 'yi^{h/2}', 'f(xi, yi)^h', 'f(xi, yi)^{h/2}', 'R']
+        )
+
+    def calc(self) -> PrettyTable:
+        func = self._equation_diff.equation_func
+        x: Symbol = self._equation_diff.first_symbol
+        y: Symbol = self._equation_diff.second_symbol
+        table: PrettyTable = PrettyTable()
+        table.field_names = self._header_table
+        table.add_row([
+            0, self._x_zero, self._y_zero, self._y_zero, func.subs({x: self._x_zero, y: self._y_zero}),
+            func.subs({x: self._x_zero, y: self._y_zero}), 0
+        ])
+        rows: list = []
+        solution: list = []
+        h: float = self._h
+        x_i: float = self._x_zero
+        y_i: float = self._y_zero
+        y_i_h_divide_2: float = self._y_zero
+        i: int = 0
+        while x_i < self._x_n:
+            y_i_plus_1: float = y_i + h * func.subs({x: x_i, y: y_i})
+            y_i_h_divide_2_plus_half: float = y_i_h_divide_2 + h/2 * func.subs({x: x_i, y: y_i_h_divide_2})
+            y_i_h_divide_2_plus_1: float = y_i_h_divide_2_plus_half + h/2 * func.subs(
+                {x: x_i + h/2, y: y_i_h_divide_2_plus_half})
+            r: float = abs(y_i_plus_1 - y_i_h_divide_2_plus_1) / (2 ** self._p - 1)
+            if r > self._epsilon:
+                rows = []
+                solution = []
+                h /= 4
+                x_i = self._x_zero
+                y_i = self._y_zero
+                y_i_h_divide_2 = self._y_zero
+                i = 0
+                continue
+            y_i = y_i_plus_1
+            y_i_h_divide_2 = y_i_h_divide_2_plus_1
+            x_i += h
+            i += 1
+            solution.append((x_i, y_i))
+            rows.append([
+                i, x_i, y_i, y_i_h_divide_2, func.subs({x: x_i, y: y_i}),
+                func.subs({x: x_i + h / 2, y: y_i_h_divide_2}), r
+            ])
+        self._solution = solution
+        table.add_rows(rows)
+        return table
+
+
+class RungeKuttaMethod(SolutionMethod):
+    """
+    Класс метода Рунге-Кутта 4-го порядка
+    """
+    name: str = 'метод Рунге-Кутта 4-го порядка'
+
+    def __init__(self,
+                 equation_diff: Equation,
+                 equation_solution: Equation,
+                 y_zero: float,
+                 x_zero: float,
+                 x_n: float,
+                 h: float,
+                 epsilon: float = 0.01) -> None:
+        super().__init__(
+            equation_diff, equation_solution, y_zero, x_zero, x_n, h, epsilon, 4,
             ['i', 'xi', 'yi^h', 'yi^{h/2}', 'f(xi, yi)^h', 'f(xi, yi)^{h/2}', 'R']
         )
 
@@ -189,4 +271,5 @@ def main():
 
 
 if __name__ == '__main__':
+    matplotlib.use('TkAgg')
     main()
