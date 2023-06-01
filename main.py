@@ -73,12 +73,12 @@ class EulerMethod(SolutionMethod):
                  epsilon: float = 0.01) -> None:
         super().__init__(
             equation_diff, equation_solution, y_zero, x_zero, x_n, h, epsilon, 1,
-            ['i', 'xi', 'yi^h', 'yi^{h/2}', 'f(xi, yi)^h', 'f(xi, yi)^{h/2}', 'R', 'Точное решение']
+            ['i', 'xi', 'yi^h', 'yi^{h/2}', 'f(xi, yi)^h', 'f(xi, yi)^{h/2}', 'R']
         )
 
-    def calc(self) -> tuple[float, int]:
+    def calc(self) -> PrettyTable:
         func = self._equation_diff.equation_func
-        func_solution = self._equation_solution.equation_func
+        #func_solution = self._equation_solution.equation_func
         x = self._equation_diff.first_symbol
         y = self._equation_diff.second_symbol
         table: PrettyTable = PrettyTable()
@@ -90,17 +90,19 @@ class EulerMethod(SolutionMethod):
             self._y_zero,
             func.subs({x: self._x_zero, y: self._y_zero}),
             func.subs({x: self._x_zero, y: self._y_zero}),
-            0,
-            func_solution.subs({x: self._x_zero, y: self._y_zero})])
+            0
+        ])
         rows: list = []
         h: float = self._h
         x_i: float = self._x_zero
         y_i: float = self._y_zero
         y_i_h_divide_2: float = self._y_zero
-        while True:
-            y_i_plus_1: float = x_i + h * func.subs({x: x_i, y: y_i})
-            y_i_h_divide_2_plus_1: float = \
-                x_i + h/2 + (h/2) * func.subs({x: x_i + h/2, y: x_i + h/2 * func.subs({x: x_i, y: y_i_h_divide_2})})
+        i: int = 1
+        while x_i < self._x_n:
+            y_i_plus_1: float = y_i + h * func.subs({x: x_i, y: y_i})
+            y_i_h_divide_2_plus_half: float = y_i_h_divide_2 + h/2 * func.subs({x: x_i, y: y_i_h_divide_2})
+            y_i_h_divide_2_plus_1: float = y_i_h_divide_2_plus_half + h/2 * func.subs(
+                {x: x_i + h/2, y: y_i_h_divide_2_plus_half})
             r: float = abs(y_i_plus_1 - y_i_h_divide_2_plus_1) / (2 ** self._p - 1)
             if r > self._epsilon:
                 rows = []
@@ -108,12 +110,18 @@ class EulerMethod(SolutionMethod):
                 x_i = self._x_zero
                 y_i = self._y_zero
                 y_i_h_divide_2 = self._y_zero
+                i = 1
                 continue
-            x_i += h
+            rows.append([
+                i, x_i, y_i_plus_1, y_i_h_divide_2_plus_1, func.subs({x: x_i, y: y_i}),
+                func.subs({x: x_i + h / 2, y: y_i_h_divide_2_plus_half}), r
+            ])
             y_i = y_i_plus_1
             y_i_h_divide_2 = y_i_h_divide_2_plus_1
+            x_i += h
+            i += 1
         table.add_rows(rows)
-        return integral_value_first, n
+        return table
 
 
 def input_data(equations, solution_methods) -> SolutionMethod:
