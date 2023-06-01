@@ -8,7 +8,7 @@ class Equation:
     """
     Класс обертка для уравнений
     """
-    def __init__(self, equation_func, first_symbol: Symbol, second_symbol: Symbol) -> None:
+    def __init__(self, equation_func, first_symbol: Symbol, second_symbol: Symbol = Symbol('y')) -> None:
         self.equation_func = equation_func
         self.first_symbol = first_symbol
         self.second_symbol = second_symbol
@@ -112,14 +112,14 @@ class EulerMethod(SolutionMethod):
                 y_i_h_divide_2 = self._y_zero
                 i = 1
                 continue
-            rows.append([
-                i, x_i, y_i_plus_1, y_i_h_divide_2_plus_1, func.subs({x: x_i, y: y_i}),
-                func.subs({x: x_i + h / 2, y: y_i_h_divide_2_plus_half}), r
-            ])
             y_i = y_i_plus_1
             y_i_h_divide_2 = y_i_h_divide_2_plus_1
             x_i += h
             i += 1
+            rows.append([
+                i, x_i, y_i, y_i_h_divide_2, func.subs({x: x_i, y: y_i}),
+                func.subs({x: x_i + h / 2, y: y_i_h_divide_2}), r
+            ])
         table.add_rows(rows)
         return table
 
@@ -127,22 +127,29 @@ class EulerMethod(SolutionMethod):
 def input_data(equations, solution_methods) -> SolutionMethod:
     equation = None
     while True:
-        print("Выберите функцию, интеграл которой требуется вычислить:")
-        [print(f"{i + 1}. {equation_iter.get_string()}") for i, equation_iter in enumerate(equations)]
-        equation_num = int(input("Введите номер выбранной функции...\n"))
+        print("Выберите диф. уравнение, которое требуется решить:")
+        [print(f"{i + 1}. y' = {equation_iter[0].get_string()}") for i, equation_iter in enumerate(equations)]
+        equation_num = int(input("Введите номер выбранного диф. уравнения...\n"))
         if equation_num < 1 or equation_num > len(equations):
-            print("Номер функции не найден, повторите ввод")
+            print("Номер диф. уравнения не найден, повторите ввод")
             continue
         equation = equations[equation_num - 1]
         break
+    y_zero: float = float(input("Введите начальное условие y0 = y(x0)...\n"))
     while True:
-        print("Задайте пределы интегрирования:")
-        a, b = (float(i) for i in input("Введите значения a и b через пробел...\n").split())
-        if a == b:
+        print("Задайте пределы дифференцирования [x0, xn]:")
+        x_zero, x_n = (float(i) for i in input("Введите значения x0 и xn через пробел...\n").split())
+        if x_zero == x_n:
             print("Значения должны быть различны")
             continue
-        elif a > b:
-            print("Значение a должно быть меньше b")
+        elif x_zero > x_n:
+            print("Значение x0 должно быть меньше xn")
+            continue
+        break
+    while True:
+        h: float = float(input("Введите начальное значение для шага h...\n"))
+        if h <= 0:
+            print("Значение должно быть больше нуля")
             continue
         break
     solution_method = None
@@ -156,27 +163,16 @@ def input_data(equations, solution_methods) -> SolutionMethod:
         solution_method = solution_methods[solution_num - 1]
         break
     while True:
-        n = input(
-            "Введите значение числа разбиения интервала интегрирования (чтобы оставить значение по умолчанию 4 нажмите Enter)...\n")
-        if n == '':
-            n = 4
-            break
-        n = int(n)
-        if n <= 0:
-            print("Значение должно быть больше нуля")
-            continue
-        break
-    while True:
         epsilon = input(
             "Введите погрешность вычислений (чтобы оставить значение по умолчанию - 0,01 нажмите Enter)...\n")
         if epsilon == '':
-            solution_method = solution_method(equation, a, b, n)
+            solution_method = solution_method(equation[0], equation[1], y_zero, x_zero, x_n, h)
             break
         epsilon = float(epsilon)
         if epsilon <= 0:
             print("Значение погрешности должно быть больше нуля")
             continue
-        solution_method = solution_method(equation, a, b, n, epsilon)
+        solution_method = solution_method(equation[0], equation[1], y_zero, x_zero, x_n, h, epsilon)
         break
     return solution_method
 
@@ -185,7 +181,7 @@ def main():
     x = Symbol('x')
     y = Symbol('y')
     equations = (
-        Equation(y + (1 + x) * y ** 2, x, y),
+        (Equation(y + (1 + x) * y ** 2, x, y), Equation(-1/x, x, y)),
     )
     solution_methods = (
         EulerMethod,
