@@ -183,12 +183,9 @@ def input_data(equations, solution_methods) -> SolutionMethod:
 
 def main():
     x = Symbol('x')
+    y = Symbol('y')
     equations = (
-        Equation(x ** 3 - 2 * x ** 2 - 5 * x + 24, x),
-        Equation(x ** 2, x),
-        Equation(sin(x * 2) + 2 * x ** 3 - 1.3 * x + 5.14, x),
-        Equation(exp(x) - 1.12 * x ** 2 - 3.14, x),
-        Equation(x ** 5 - 1.18, x)
+        Equation(y + (1 + x) * y ** 2, x, y),
     )
     solution_methods = (
         EulerMethod,
