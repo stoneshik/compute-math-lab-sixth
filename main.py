@@ -78,26 +78,20 @@ class EulerMethod(SolutionMethod):
 
     def calc(self) -> PrettyTable:
         func = self._equation_diff.equation_func
-        #func_solution = self._equation_solution.equation_func
-        x = self._equation_diff.first_symbol
-        y = self._equation_diff.second_symbol
+        x: Symbol = self._equation_diff.first_symbol
+        y: Symbol = self._equation_diff.second_symbol
         table: PrettyTable = PrettyTable()
         table.field_names = self._header_table
         table.add_row([
-            0,
-            self._x_zero,
-            self._y_zero,
-            self._y_zero,
-            func.subs({x: self._x_zero, y: self._y_zero}),
-            func.subs({x: self._x_zero, y: self._y_zero}),
-            0
+            0, self._x_zero, self._y_zero, self._y_zero, func.subs({x: self._x_zero, y: self._y_zero}),
+            func.subs({x: self._x_zero, y: self._y_zero}), 0
         ])
         rows: list = []
         h: float = self._h
         x_i: float = self._x_zero
         y_i: float = self._y_zero
         y_i_h_divide_2: float = self._y_zero
-        i: int = 1
+        i: int = 0
         while x_i < self._x_n:
             y_i_plus_1: float = y_i + h * func.subs({x: x_i, y: y_i})
             y_i_h_divide_2_plus_half: float = y_i_h_divide_2 + h/2 * func.subs({x: x_i, y: y_i_h_divide_2})
@@ -110,7 +104,7 @@ class EulerMethod(SolutionMethod):
                 x_i = self._x_zero
                 y_i = self._y_zero
                 y_i_h_divide_2 = self._y_zero
-                i = 1
+                i = 0
                 continue
             y_i = y_i_plus_1
             y_i_h_divide_2 = y_i_h_divide_2_plus_1
