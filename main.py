@@ -155,33 +155,38 @@ class RungeKuttaMethod(SolutionMethod):
                  epsilon: float = 0.01) -> None:
         super().__init__(
             equation_diff, equation_solution, y_zero, x_zero, x_n, h, epsilon, 4,
-            ['i', 'xi', 'yi^h', 'yi^{h/2}', 'f(xi, yi)^h', 'f(xi, yi)^{h/2}', 'R']
+            ['i', 'xi', 'yi^h', 'yi^{h/2}', 'R']
         )
 
-    def calc(self) -> PrettyTable:
+    def _calc_iter(self, x_i: float, y_i: float, h: float) -> float:
         func = self._equation_diff.equation_func
         x: Symbol = self._equation_diff.first_symbol
         y: Symbol = self._equation_diff.second_symbol
+        k1: float = h * func.subs({x: x_i, y: y_i})
+        k2: float = h * func.subs({x: x_i + h / 2, y: y_i + k1 / 2})
+        k3: float = h * func.subs({x: x_i + h / 2, y: y_i + k2 / 2})
+        k4: float = h * func.subs({x: x_i + h, y: y_i + k3})
+        return y_i + 1/6 * (k1 + 2 * k2 + 2 * k3 + k4)
+
+    def calc(self) -> PrettyTable:
         table: PrettyTable = PrettyTable()
         table.field_names = self._header_table
-        table.add_row([
-            0, self._x_zero, self._y_zero, self._y_zero, func.subs({x: self._x_zero, y: self._y_zero}),
-            func.subs({x: self._x_zero, y: self._y_zero}), 0
-        ])
+        table.add_row([0, self._x_zero, self._y_zero, self._y_zero, 0])
         rows: list = []
+        solution: list = []
         h: float = self._h
         x_i: float = self._x_zero
         y_i: float = self._y_zero
         y_i_h_divide_2: float = self._y_zero
         i: int = 0
         while x_i < self._x_n:
-            y_i_plus_1: float = y_i + h * func.subs({x: x_i, y: y_i})
-            y_i_h_divide_2_plus_half: float = y_i_h_divide_2 + h/2 * func.subs({x: x_i, y: y_i_h_divide_2})
-            y_i_h_divide_2_plus_1: float = y_i_h_divide_2_plus_half + h/2 * func.subs(
-                {x: x_i + h/2, y: y_i_h_divide_2_plus_half})
+            y_i_plus_1: float = self._calc_iter(x_i, y_i, h)
+            y_i_h_divide_2_plus_half: float = self._calc_iter(x_i, y_i_h_divide_2, h/2)
+            y_i_h_divide_2_plus_1: float = self._calc_iter(x_i + h/2, y_i_h_divide_2_plus_half, h/2)
             r: float = abs(y_i_plus_1 - y_i_h_divide_2_plus_1) / (2 ** self._p - 1)
             if r > self._epsilon:
                 rows = []
+                solution = []
                 h /= 4
                 x_i = self._x_zero
                 y_i = self._y_zero
@@ -192,10 +197,9 @@ class RungeKuttaMethod(SolutionMethod):
             y_i_h_divide_2 = y_i_h_divide_2_plus_1
             x_i += h
             i += 1
-            rows.append([
-                i, x_i, y_i, y_i_h_divide_2, func.subs({x: x_i, y: y_i}),
-                func.subs({x: x_i + h / 2, y: y_i_h_divide_2}), r
-            ])
+            solution.append((x_i, y_i))
+            rows.append([i, x_i, y_i, y_i_h_divide_2, r])
+        self._solution = solution
         table.add_rows(rows)
         return table
 
@@ -261,6 +265,7 @@ def main():
     )
     solution_methods = (
         EulerMethod,
+        RungeKuttaMethod
     )
     solution_method = input_data(equations, solution_methods)
     if solution_method is None:
