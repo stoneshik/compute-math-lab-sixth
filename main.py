@@ -259,38 +259,63 @@ class AdamsMethod(SolutionMethod):
         y_i_minus_1: float = runge_kutta_method.calc_iter(x_i_minus_3 + 2*h, y_i_minus_2, h)
         y_i: float = runge_kutta_method.calc_iter(x_i_minus_3 + 3*h, y_i_minus_1, h)
         rows: list = [
-            [1, x_i_minus_3 + h, y_i_minus_2, func_solution(x_i_minus_3 + h, x),
-             abs(func_solution(x_i_minus_3 + h, x) - y_i_minus_2)],
-            [2, x_i_minus_3 + 2*h, y_i_minus_1, func_solution(x_i_minus_3 + 2*h, x),
-             abs(func_solution(x_i_minus_3 + 2*h, x) - y_i_minus_1)],
-            [3, x_i_minus_3 + 3*h, y_i, func_solution(x_i_minus_3 + 3*h, x),
-             abs(func_solution(x_i_minus_3 + 3*h, x) - y_i)],
+            [1, x_i_minus_3 + h, y_i_minus_2, func_solution.subs(x, x_i_minus_3 + h),
+             abs(func_solution.subs(x, x_i_minus_3 + h) - y_i_minus_2)],
+            [2, x_i_minus_3 + 2*h, y_i_minus_1, func_solution.subs(x, x_i_minus_3 + 2*h),
+             abs(func_solution.subs(x, x_i_minus_3 + 2*h) - y_i_minus_1)],
+            [3, x_i_minus_3 + 3*h, y_i, func_solution.subs(x, x_i_minus_3 + 3*h),
+             abs(func_solution.subs(x, x_i_minus_3 + 3*h) - y_i)],
         ]
-        solution: list = [y_i_minus_2, y_i_minus_1, y_i]
-        i: int = 0
-        while x_i < self._x_n:
-            y_i_plus_1: float = self._calc_iter(x_i, y_i, h)
-            y_i_h_divide_2_plus_half: float = self._calc_iter(x_i, y_i_h_divide_2, h/2)
-            y_i_h_divide_2_plus_1: float = self._calc_iter(x_i + h/2, y_i_h_divide_2_plus_half, h/2)
-            r: float = abs(y_i_plus_1 - y_i_h_divide_2_plus_1) / (2 ** self._p - 1)
+        solution: list = [
+            (x_i_minus_3 + h, y_i_minus_2),
+            (x_i_minus_3 + 2*h, y_i_minus_1),
+            (x_i_minus_3 + 3*h, y_i)
+        ]
+        i: int = 3
+        while x_i_minus_3 + 4*h < self._x_n:
+            y_i_plus_1: float = self._calc_iter(
+                x_i_minus_3 + 4*h,
+                y_i_minus_3,
+                y_i_minus_2,
+                y_i_minus_1,
+                y_i,
+                h
+            )
+            r: float = abs(func_solution.subs(x, x_i_minus_3 + 4*h) - y_i_plus_1)
             if r > self._epsilon:
-                rows = []
-                solution = []
-                h /= 4
-                x_i = self._x_zero
-                y_i = self._y_zero
-                y_i_h_divide_2 = self._y_zero
-                i = 0
+                h: float = h / 2
+                x_i_minus_3 = self._x_zero
+                y_i_minus_3 = self._y_zero
+                y_i_minus_2 = runge_kutta_method.calc_iter(x_i_minus_3 + h, y_i_minus_3, h)
+                y_i_minus_1 = runge_kutta_method.calc_iter(x_i_minus_3 + 2 * h, y_i_minus_2, h)
+                y_i = runge_kutta_method.calc_iter(x_i_minus_3 + 3 * h, y_i_minus_1, h)
+                rows: list = [
+                    [1, x_i_minus_3 + h, y_i_minus_2, func_solution.subs(x, x_i_minus_3 + h),
+                     abs(func_solution.subs(x, x_i_minus_3 + h) - y_i_minus_2)],
+                    [2, x_i_minus_3 + 2 * h, y_i_minus_1, func_solution.subs(x, x_i_minus_3 + 2 * h),
+                     abs(func_solution.subs(x, x_i_minus_3 + 2 * h) - y_i_minus_1)],
+                    [3, x_i_minus_3 + 3 * h, y_i, func_solution.subs(x, x_i_minus_3 + 3 * h),
+                     abs(func_solution.subs(x, x_i_minus_3 + 3 * h) - y_i)],
+                ]
+                solution: list = [
+                    (x_i_minus_3 + h, y_i_minus_2),
+                    (x_i_minus_3 + 2 * h, y_i_minus_1),
+                    (x_i_minus_3 + 3 * h, y_i)
+                ]
+                i: int = 3
                 continue
+            y_i_minus_3 = y_i_minus_2
+            y_i_minus_2 = y_i_minus_1
+            y_i_minus_1 = y_i
             y_i = y_i_plus_1
-            y_i_h_divide_2 = y_i_h_divide_2_plus_1
-            x_i += h
+            x_i_minus_3 += h
             i += 1
-            solution.append((x_i, y_i))
-            rows.append([i, x_i, y_i, y_i_h_divide_2, r])
+            solution.append((x_i_minus_3 + 4*h, y_i))
+            rows.append([i, x_i_minus_3 + 4*h, y_i, func_solution.subs(x, x_i_minus_3 + 4*h), r])
         self._solution = solution
         table.add_rows(rows)
         return table
+
 
 def input_data(equations, solution_methods) -> SolutionMethod:
     equation = None
@@ -353,7 +378,8 @@ def main():
     )
     solution_methods = (
         EulerMethod,
-        RungeKuttaMethod
+        RungeKuttaMethod,
+        AdamsMethod
     )
     solution_method = input_data(equations, solution_methods)
     if solution_method is None:
