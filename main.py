@@ -60,7 +60,7 @@ class SolutionMethod(ABC):
         plt.figure()
         plt.xlabel(r'$x$', fontsize=14)
         plt.ylabel(r'$F(x)$', fontsize=14)
-        plt.title(r"График функции $F(x)$")
+        plt.title(r'Графики точного и приближённого решения$')
         x = Symbol('x')
         x_values = numpy.arange(self._x_zero - self._h * 2, self._x_n + self._h * 2, 0.01)
         y_values = [self._equation_solution.equation_func.subs(x, x_iter) for x_iter in x_values]
@@ -203,6 +203,79 @@ class RungeKuttaMethod(SolutionMethod):
         table.add_rows(rows)
         return table
 
+
+class AdamsMethod(SolutionMethod):
+    """
+    Класс метода Адамса
+    """
+    name: str = 'метод Адамса'
+
+    def __init__(self,
+                 equation_diff: Equation,
+                 equation_solution: Equation,
+                 y_zero: float,
+                 x_zero: float,
+                 x_n: float,
+                 h: float,
+                 epsilon: float = 0.01) -> None:
+        super().__init__(
+            equation_diff, equation_solution, y_zero, x_zero, x_n, h, epsilon, 4,
+            ['i', 'xi', 'yi^h', 'yi^{h/2}', 'R']
+        )
+
+    def _calc_iter(self,
+                   x_i_minus_3: float,
+                   y_i_minus_3: float,
+                   y_i_minus_2: float,
+                   y_i_minus_1: float,
+                   y_i: float,
+                   h: float) -> float:
+        func = self._equation_diff.equation_func
+        x: Symbol = self._equation_diff.first_symbol
+        y: Symbol = self._equation_diff.second_symbol
+        f_minus_3: float = func.subs({x: x_i_minus_3, y: y_i_minus_3})
+        f_minus_2: float = func.subs({x: x_i_minus_3 + h, y: y_i_minus_2})
+        f_minus_1: float = func.subs({x: x_i_minus_3 + 2*h, y: y_i_minus_1})
+        f_i: float = func.subs({x: x_i_minus_3 + 3*h, y: y_i})
+        delta_f_i: float = f_i - f_minus_1
+        delta_2_f_i: float = f_i - 2*f_minus_1 + f_minus_2
+        delta_3_f_i: float = f_i - 3*f_minus_1 + 3*f_minus_2 - f_minus_3
+        return y_i + h * f_i + (h**2 / 2) * delta_f_i + (5*h**3 / 12) * delta_2_f_i + (3*h**4 / 8) * delta_3_f_i
+
+    def calc(self) -> PrettyTable:
+        table: PrettyTable = PrettyTable()
+        table.field_names = self._header_table
+        table.add_row([0, self._x_zero, self._y_zero, self._y_zero, 0])
+        rows: list = []
+        solution: list = []
+        h: float = self._h
+        x_i: float = self._x_zero
+        y_i: float = self._y_zero
+        y_i_h_divide_2: float = self._y_zero
+        i: int = 0
+        while x_i < self._x_n:
+            y_i_plus_1: float = self._calc_iter(x_i, y_i, h)
+            y_i_h_divide_2_plus_half: float = self._calc_iter(x_i, y_i_h_divide_2, h/2)
+            y_i_h_divide_2_plus_1: float = self._calc_iter(x_i + h/2, y_i_h_divide_2_plus_half, h/2)
+            r: float = abs(y_i_plus_1 - y_i_h_divide_2_plus_1) / (2 ** self._p - 1)
+            if r > self._epsilon:
+                rows = []
+                solution = []
+                h /= 4
+                x_i = self._x_zero
+                y_i = self._y_zero
+                y_i_h_divide_2 = self._y_zero
+                i = 0
+                continue
+            y_i = y_i_plus_1
+            y_i_h_divide_2 = y_i_h_divide_2_plus_1
+            x_i += h
+            i += 1
+            solution.append((x_i, y_i))
+            rows.append([i, x_i, y_i, y_i_h_divide_2, r])
+        self._solution = solution
+        table.add_rows(rows)
+        return table
 
 def input_data(equations, solution_methods) -> SolutionMethod:
     equation = None
