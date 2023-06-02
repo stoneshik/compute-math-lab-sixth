@@ -158,7 +158,7 @@ class RungeKuttaMethod(SolutionMethod):
             ['i', 'xi', 'yi^h', 'yi^{h/2}', 'R']
         )
 
-    def _calc_iter(self, x_i: float, y_i: float, h: float) -> float:
+    def calc_iter(self, x_i: float, y_i: float, h: float) -> float:
         func = self._equation_diff.equation_func
         x: Symbol = self._equation_diff.first_symbol
         y: Symbol = self._equation_diff.second_symbol
@@ -180,9 +180,9 @@ class RungeKuttaMethod(SolutionMethod):
         y_i_h_divide_2: float = self._y_zero
         i: int = 0
         while x_i < self._x_n:
-            y_i_plus_1: float = self._calc_iter(x_i, y_i, h)
-            y_i_h_divide_2_plus_half: float = self._calc_iter(x_i, y_i_h_divide_2, h/2)
-            y_i_h_divide_2_plus_1: float = self._calc_iter(x_i + h/2, y_i_h_divide_2_plus_half, h/2)
+            y_i_plus_1: float = self.calc_iter(x_i, y_i, h)
+            y_i_h_divide_2_plus_half: float = self.calc_iter(x_i, y_i_h_divide_2, h/2)
+            y_i_h_divide_2_plus_1: float = self.calc_iter(x_i + h/2, y_i_h_divide_2_plus_half, h/2)
             r: float = abs(y_i_plus_1 - y_i_h_divide_2_plus_1) / (2 ** self._p - 1)
             if r > self._epsilon:
                 rows = []
@@ -220,7 +220,7 @@ class AdamsMethod(SolutionMethod):
                  epsilon: float = 0.01) -> None:
         super().__init__(
             equation_diff, equation_solution, y_zero, x_zero, x_n, h, epsilon, 4,
-            ['i', 'xi', 'yi^h', 'yi^{h/2}', 'R']
+            ['i', 'xi', 'yi', 'Точное значение', 'R']
         )
 
     def _calc_iter(self,
@@ -243,15 +243,30 @@ class AdamsMethod(SolutionMethod):
         return y_i + h * f_i + (h**2 / 2) * delta_f_i + (5*h**3 / 12) * delta_2_f_i + (3*h**4 / 8) * delta_3_f_i
 
     def calc(self) -> PrettyTable:
+        func_solution = self._equation_solution.equation_func
+        x: Symbol = self._equation_solution.first_symbol
         table: PrettyTable = PrettyTable()
         table.field_names = self._header_table
         table.add_row([0, self._x_zero, self._y_zero, self._y_zero, 0])
-        rows: list = []
-        solution: list = []
+        runge_kutta_method: RungeKuttaMethod = RungeKuttaMethod(
+            self._equation_diff, self._equation_solution,
+            self._y_zero, self._x_zero, self._x_n, self._h, self._epsilon
+        )
         h: float = self._h
-        x_i: float = self._x_zero
-        y_i: float = self._y_zero
-        y_i_h_divide_2: float = self._y_zero
+        x_i_minus_3: float = self._x_zero
+        y_i_minus_3: float = self._y_zero
+        y_i_minus_2: float = runge_kutta_method.calc_iter(x_i_minus_3 + h, y_i_minus_3, h)
+        y_i_minus_1: float = runge_kutta_method.calc_iter(x_i_minus_3 + 2*h, y_i_minus_2, h)
+        y_i: float = runge_kutta_method.calc_iter(x_i_minus_3 + 3*h, y_i_minus_1, h)
+        rows: list = [
+            [1, x_i_minus_3 + h, y_i_minus_2, func_solution(x_i_minus_3 + h, x),
+             abs(func_solution(x_i_minus_3 + h, x) - y_i_minus_2)],
+            [2, x_i_minus_3 + 2*h, y_i_minus_1, func_solution(x_i_minus_3 + 2*h, x),
+             abs(func_solution(x_i_minus_3 + 2*h, x) - y_i_minus_1)],
+            [3, x_i_minus_3 + 3*h, y_i, func_solution(x_i_minus_3 + 3*h, x),
+             abs(func_solution(x_i_minus_3 + 3*h, x) - y_i)],
+        ]
+        solution: list = [y_i_minus_2, y_i_minus_1, y_i]
         i: int = 0
         while x_i < self._x_n:
             y_i_plus_1: float = self._calc_iter(x_i, y_i, h)
