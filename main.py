@@ -74,7 +74,7 @@ class SolutionMethod(ABC):
         plt.title(r'Графики точного и приближённого решения')
         x = Symbol('x')
         try:
-            x_values = numpy.arange(self._x_zero - self._h * 2, self._x_n + self._h * 2, 0.01)
+            x_values = numpy.arange(self._x_zero - self._h, self._x_n + self._h, 0.01)
             y_values = [self._equation_solution.equation_func.subs(x, x_iter) for x_iter in x_values]
             plt.plot(x_values, y_values, color='red')
         except TypeError:
