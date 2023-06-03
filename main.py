@@ -71,7 +71,7 @@ class SolutionMethod(ABC):
         plt.figure()
         plt.xlabel(r'$x$', fontsize=14)
         plt.ylabel(r'$F(x)$', fontsize=14)
-        plt.title(r'Графики точного и приближённого решения$')
+        plt.title(r'Графики точного и приближённого решения')
         x = Symbol('x')
         x_values = numpy.arange(self._x_zero - self._h * 2, self._x_n + self._h * 2, 0.01)
         y_values = [self._equation_solution.equation_func.subs(x, x_iter) for x_iter in x_values]
@@ -233,6 +233,9 @@ class AdamsMethod(SolutionMethod):
             equation_diff, equation_solution, y_zero, x_zero, x_n, h, epsilon, 4,
             ['i', 'xi', 'yi', 'Точное значение', 'R']
         )
+        if abs(self._x_zero - self._x_n) / self._h < 4:
+            self._h = abs(self._x_zero - self._x_n) / 4
+            print(f"Было задано слишком большое начальное значение h, поэтому берём максимальное допустимое начальное значение h={self._h}")
 
     def _calc_iter(self,
                    x_i_minus_3: float,
@@ -359,6 +362,9 @@ def input_data(equations, solution_methods) -> SolutionMethod:
         h: float = float(input("Введите начальное значение для шага h...\n"))
         if h <= 0:
             print("Значение должно быть больше нуля")
+            continue
+        elif h > abs(x_n - x_zero):
+            print("Значение должно быть меньше расстояния между x0 и xn")
             continue
         break
     solution_method = None
