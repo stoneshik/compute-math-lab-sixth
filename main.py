@@ -357,6 +357,8 @@ def input_data(equations, solution_methods) -> SolutionMethod:
         elif x_zero > x_n:
             print("Значение x0 должно быть меньше xn")
             continue
+        elif abs(equation[1].equation_func.subs(equation[1].first_symbol, x_zero) - y_zero) > abs(x_n - x_zero) / 100:
+            print("Внимание! Введённое начальное условие для y0 сильно отличается от точного значения, поэтому может быть получено неточное решение, либо решение не будет найдено")
         break
     while True:
         h: float = float(input("Введите начальное значение для шага h...\n"))
