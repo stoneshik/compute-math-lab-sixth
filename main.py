@@ -277,12 +277,13 @@ class AdamsMethod(SolutionMethod):
         y_i: float = runge_kutta_method.calc_iter(x_i_minus_3 + 2*h, y_i_minus_1, h)
         rows: list = self._create_rows(x_i_minus_3, y_i_minus_2, y_i_minus_1, y_i, h)
         solution: list = [
+            (x_i_minus_3, y_i_minus_3),
             (x_i_minus_3 + h, y_i_minus_2),
             (x_i_minus_3 + 2*h, y_i_minus_1),
             (x_i_minus_3 + 3*h, y_i)
         ]
         i: int = 3
-        while x_i_minus_3 + 4*h < self._x_n:
+        while x_i_minus_3 + 3*h < self._x_n:
             y_i_plus_1: float = self._calc_iter(
                 x_i_minus_3,
                 y_i_minus_3,
@@ -301,9 +302,10 @@ class AdamsMethod(SolutionMethod):
                 y_i = runge_kutta_method.calc_iter(x_i_minus_3 + 2 * h, y_i_minus_1, h)
                 rows: list = self._create_rows(x_i_minus_3, y_i_minus_2, y_i_minus_1, y_i, h)
                 solution: list = [
+                    (x_i_minus_3, y_i_minus_3),
                     (x_i_minus_3 + h, y_i_minus_2),
-                    (x_i_minus_3 + 2 * h, y_i_minus_1),
-                    (x_i_minus_3 + 3 * h, y_i)
+                    (x_i_minus_3 + 2*h, y_i_minus_1),
+                    (x_i_minus_3 + 3*h, y_i)
                 ]
                 i: int = 3
                 continue
