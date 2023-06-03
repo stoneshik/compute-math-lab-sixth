@@ -103,12 +103,12 @@ class EulerMethod(SolutionMethod):
             0, self._x_zero, self._y_zero, self._y_zero, func.subs({x: self._x_zero, y: self._y_zero}),
             func.subs({x: self._x_zero, y: self._y_zero}), 0
         ])
-        rows: list = []
-        solution: list = []
         h: float = self._h
         x_i: float = self._x_zero
         y_i: float = self._y_zero
         y_i_h_divide_2: float = self._y_zero
+        rows: list = []
+        solution: list = [(x_i, y_i)]
         i: int = 0
         while x_i < self._x_n:
             y_i_plus_1: float = y_i + h * func.subs({x: x_i, y: y_i})
@@ -118,7 +118,7 @@ class EulerMethod(SolutionMethod):
             r: float = abs(y_i_plus_1 - y_i_h_divide_2_plus_1) / (2 ** self._p - 1)
             if r > self._epsilon:
                 rows = []
-                solution = []
+                solution = [(x_i, y_i)]
                 h /= 4
                 x_i = self._x_zero
                 y_i = self._y_zero
@@ -172,12 +172,12 @@ class RungeKuttaMethod(SolutionMethod):
         table: PrettyTable = PrettyTable()
         table.field_names = self._header_table
         table.add_row([0, self._x_zero, self._y_zero, self._y_zero, 0])
-        rows: list = []
-        solution: list = []
         h: float = self._h
         x_i: float = self._x_zero
         y_i: float = self._y_zero
         y_i_h_divide_2: float = self._y_zero
+        rows: list = []
+        solution: list = [(x_i, y_i)]
         i: int = 0
         while x_i < self._x_n:
             y_i_plus_1: float = self.calc_iter(x_i, y_i, h)
@@ -186,7 +186,7 @@ class RungeKuttaMethod(SolutionMethod):
             r: float = abs(y_i_plus_1 - y_i_h_divide_2_plus_1) / (2 ** self._p - 1)
             if r > self._epsilon:
                 rows = []
-                solution = []
+                solution = [(x_i, y_i)]
                 h /= 4
                 x_i = self._x_zero
                 y_i = self._y_zero
@@ -242,6 +242,23 @@ class AdamsMethod(SolutionMethod):
         delta_3_f_i: float = f_i - 3*f_minus_1 + 3*f_minus_2 - f_minus_3
         return y_i + h * f_i + (h**2 / 2) * delta_f_i + (5*h**3 / 12) * delta_2_f_i + (3*h**4 / 8) * delta_3_f_i
 
+    def _create_rows(self,
+                     x_i_minus_3: float,
+                     y_i_minus_2: float,
+                     y_i_minus_1: float,
+                     y_i: float,
+                     h: float) -> list:
+        func_solution = self._equation_solution.equation_func
+        x: Symbol = self._equation_diff.first_symbol
+        return [
+            [1, x_i_minus_3 + h, y_i_minus_2, func_solution.subs(x, x_i_minus_3 + h),
+             abs(func_solution.subs(x, x_i_minus_3 + h) - y_i_minus_2)],
+            [2, x_i_minus_3 + 2 * h, y_i_minus_1, func_solution.subs(x, x_i_minus_3 + 2 * h),
+             abs(func_solution.subs(x, x_i_minus_3 + 2 * h) - y_i_minus_1)],
+            [3, x_i_minus_3 + 3 * h, y_i, func_solution.subs(x, x_i_minus_3 + 3 * h),
+             abs(func_solution.subs(x, x_i_minus_3 + 3 * h) - y_i)]
+        ]
+
     def calc(self) -> PrettyTable:
         func_solution = self._equation_solution.equation_func
         x: Symbol = self._equation_solution.first_symbol
@@ -255,17 +272,10 @@ class AdamsMethod(SolutionMethod):
         h: float = self._h
         x_i_minus_3: float = self._x_zero
         y_i_minus_3: float = self._y_zero
-        y_i_minus_2: float = runge_kutta_method.calc_iter(x_i_minus_3 + h, y_i_minus_3, h)
-        y_i_minus_1: float = runge_kutta_method.calc_iter(x_i_minus_3 + 2*h, y_i_minus_2, h)
-        y_i: float = runge_kutta_method.calc_iter(x_i_minus_3 + 3*h, y_i_minus_1, h)
-        rows: list = [
-            [1, x_i_minus_3 + h, y_i_minus_2, func_solution.subs(x, x_i_minus_3 + h),
-             abs(func_solution.subs(x, x_i_minus_3 + h) - y_i_minus_2)],
-            [2, x_i_minus_3 + 2*h, y_i_minus_1, func_solution.subs(x, x_i_minus_3 + 2*h),
-             abs(func_solution.subs(x, x_i_minus_3 + 2*h) - y_i_minus_1)],
-            [3, x_i_minus_3 + 3*h, y_i, func_solution.subs(x, x_i_minus_3 + 3*h),
-             abs(func_solution.subs(x, x_i_minus_3 + 3*h) - y_i)],
-        ]
+        y_i_minus_2: float = runge_kutta_method.calc_iter(x_i_minus_3, y_i_minus_3, h)
+        y_i_minus_1: float = runge_kutta_method.calc_iter(x_i_minus_3 + h, y_i_minus_2, h)
+        y_i: float = runge_kutta_method.calc_iter(x_i_minus_3 + 2*h, y_i_minus_1, h)
+        rows: list = self._create_rows(x_i_minus_3, y_i_minus_2, y_i_minus_1, y_i, h)
         solution: list = [
             (x_i_minus_3 + h, y_i_minus_2),
             (x_i_minus_3 + 2*h, y_i_minus_1),
@@ -274,7 +284,7 @@ class AdamsMethod(SolutionMethod):
         i: int = 3
         while x_i_minus_3 + 4*h < self._x_n:
             y_i_plus_1: float = self._calc_iter(
-                x_i_minus_3 + 4*h,
+                x_i_minus_3,
                 y_i_minus_3,
                 y_i_minus_2,
                 y_i_minus_1,
@@ -286,17 +296,10 @@ class AdamsMethod(SolutionMethod):
                 h: float = h / 2
                 x_i_minus_3 = self._x_zero
                 y_i_minus_3 = self._y_zero
-                y_i_minus_2 = runge_kutta_method.calc_iter(x_i_minus_3 + h, y_i_minus_3, h)
-                y_i_minus_1 = runge_kutta_method.calc_iter(x_i_minus_3 + 2 * h, y_i_minus_2, h)
-                y_i = runge_kutta_method.calc_iter(x_i_minus_3 + 3 * h, y_i_minus_1, h)
-                rows: list = [
-                    [1, x_i_minus_3 + h, y_i_minus_2, func_solution.subs(x, x_i_minus_3 + h),
-                     abs(func_solution.subs(x, x_i_minus_3 + h) - y_i_minus_2)],
-                    [2, x_i_minus_3 + 2 * h, y_i_minus_1, func_solution.subs(x, x_i_minus_3 + 2 * h),
-                     abs(func_solution.subs(x, x_i_minus_3 + 2 * h) - y_i_minus_1)],
-                    [3, x_i_minus_3 + 3 * h, y_i, func_solution.subs(x, x_i_minus_3 + 3 * h),
-                     abs(func_solution.subs(x, x_i_minus_3 + 3 * h) - y_i)],
-                ]
+                y_i_minus_2 = runge_kutta_method.calc_iter(x_i_minus_3, y_i_minus_3, h)
+                y_i_minus_1 = runge_kutta_method.calc_iter(x_i_minus_3 + h, y_i_minus_2, h)
+                y_i = runge_kutta_method.calc_iter(x_i_minus_3 + 2 * h, y_i_minus_1, h)
+                rows: list = self._create_rows(x_i_minus_3, y_i_minus_2, y_i_minus_1, y_i, h)
                 solution: list = [
                     (x_i_minus_3 + h, y_i_minus_2),
                     (x_i_minus_3 + 2 * h, y_i_minus_1),
@@ -308,10 +311,10 @@ class AdamsMethod(SolutionMethod):
             y_i_minus_2 = y_i_minus_1
             y_i_minus_1 = y_i
             y_i = y_i_plus_1
-            x_i_minus_3 += h
             i += 1
             solution.append((x_i_minus_3 + 4*h, y_i))
             rows.append([i, x_i_minus_3 + 4*h, y_i, func_solution.subs(x, x_i_minus_3 + 4*h), r])
+            x_i_minus_3 += h
         self._solution = solution
         table.add_rows(rows)
         return table
