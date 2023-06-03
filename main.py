@@ -118,7 +118,7 @@ class EulerMethod(SolutionMethod):
             r: float = abs(y_i_plus_1 - y_i_h_divide_2_plus_1) / (2 ** self._p - 1)
             if r > self._epsilon:
                 rows = []
-                solution = [(x_i, y_i)]
+                solution = [(self._x_zero, self._y_zero)]
                 h /= 4
                 x_i = self._x_zero
                 y_i = self._y_zero
@@ -129,7 +129,7 @@ class EulerMethod(SolutionMethod):
             y_i_h_divide_2 = y_i_h_divide_2_plus_1
             x_i += h
             i += 1
-            solution.append((x_i, y_i))
+            solution.append((x_i, y_i_h_divide_2))
             rows.append([
                 i, x_i, y_i, y_i_h_divide_2, func.subs({x: x_i, y: y_i}),
                 func.subs({x: x_i + h / 2, y: y_i_h_divide_2}), r
@@ -186,7 +186,7 @@ class RungeKuttaMethod(SolutionMethod):
             r: float = abs(y_i_plus_1 - y_i_h_divide_2_plus_1) / (2 ** self._p - 1)
             if r > self._epsilon:
                 rows = []
-                solution = [(x_i, y_i)]
+                solution = [(self._x_zero, self._y_zero)]
                 h /= 4
                 x_i = self._x_zero
                 y_i = self._y_zero
@@ -197,7 +197,7 @@ class RungeKuttaMethod(SolutionMethod):
             y_i_h_divide_2 = y_i_h_divide_2_plus_1
             x_i += h
             i += 1
-            solution.append((x_i, y_i))
+            solution.append((x_i, y_i_h_divide_2))
             rows.append([i, x_i, y_i, y_i_h_divide_2, r])
         self._solution = solution
         table.add_rows(rows)
