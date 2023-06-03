@@ -56,6 +56,17 @@ class SolutionMethod(ABC):
     def calc(self) -> PrettyTable:
         pass
 
+    def print_solution(self) -> None:
+        table: PrettyTable = PrettyTable()
+        table.field_names = ['i', 'xi', 'yi']
+        if len(self._solution) == 0:
+            print("Решение не найденно")
+            return
+        for i, value in enumerate(self._solution):
+            table.add_row([i, value[0], value[1]])
+        print("Найденное решение:")
+        print(table)
+
     def draw(self) -> None:
         plt.figure()
         plt.xlabel(r'$x$', fontsize=14)
@@ -391,6 +402,7 @@ def main():
         return
     table: PrettyTable = solution_method.calc()
     print(table)
+    solution_method.print_solution()
     solution_method.draw()
 
 
