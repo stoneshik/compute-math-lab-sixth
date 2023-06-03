@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import math
 
 import numpy
 import matplotlib
@@ -73,9 +74,14 @@ class SolutionMethod(ABC):
         plt.ylabel(r'$F(x)$', fontsize=14)
         plt.title(r'Графики точного и приближённого решения')
         x = Symbol('x')
-        x_values = numpy.arange(self._x_zero - self._h * 2, self._x_n + self._h * 2, 0.01)
-        y_values = [self._equation_solution.equation_func.subs(x, x_iter) for x_iter in x_values]
-        plt.plot(x_values, y_values, color='red')
+        try:
+            x_values = numpy.arange(self._x_zero - self._h * 2, self._x_n + self._h * 2, 0.01)
+            y_values = [self._equation_solution.equation_func.subs(x, x_iter) for x_iter in x_values]
+            plt.plot(x_values, y_values, color='red')
+        except TypeError:
+            x_values = numpy.arange(self._x_zero, self._x_n, 0.01)
+            y_values = [self._equation_solution.equation_func.subs(x, x_iter) for x_iter in x_values]
+            plt.plot(x_values, y_values, color='red')
         x_values = []
         y_values = []
         for i in self._solution:
@@ -397,8 +403,11 @@ def input_data(equations, solution_methods) -> SolutionMethod:
 def main():
     x = Symbol('x')
     y = Symbol('y')
+    # ссылка на Desmos https://www.desmos.com/calculator/n32jr5diza
     equations = (
         (Equation(y + (1 + x) * y ** 2, x, y), Equation(-1/x, x, y)),
+        (Equation((x - y) ** 2 + 1, x, y), Equation(x - 1/x, x, y)),
+        (Equation(x ** 2 * y ** (1/3), x, y), Equation((2/9 * x ** 3) ** (3/2), x, y)),
     )
     solution_methods = (
         EulerMethod,
