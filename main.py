@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
-import math
 
 import numpy
 import matplotlib
 import matplotlib.pyplot as plt
-from sympy import latex, diff, sin, exp, Symbol
+from sympy import latex, diff, exp, Symbol
 from prettytable import PrettyTable
 
 
@@ -403,11 +402,11 @@ def input_data(equations, solution_methods) -> SolutionMethod:
 def main():
     x = Symbol('x')
     y = Symbol('y')
-    # ссылка на Desmos https://www.desmos.com/calculator/n32jr5diza
+    # ссылка на Desmos https://www.desmos.com/calculator/polsgqwrsa
     equations = (
         (Equation(y + (1 + x) * y ** 2, x, y), Equation(-1/x, x, y)),
         (Equation((x - y) ** 2 + 1, x, y), Equation(x - 1/x, x, y)),
-        (Equation(x ** 2 * y ** (1/3), x, y), Equation((2/9 * x ** 3) ** (3/2), x, y)),
+        (Equation(x * exp(2*x + 3), x, y), Equation((exp(2*x + 3) / 2) * (x - 1/2), x, y)),
     )
     solution_methods = (
         EulerMethod,
